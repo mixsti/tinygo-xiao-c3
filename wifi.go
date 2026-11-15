@@ -93,6 +93,8 @@ func cmdSet(name, pass string) {
 	println("stored in RAM. config save writes flash. wifi connect uses RAM.")
 }
 
+const connectAttempts = 3
+
 func cmdConnect() {
 	if ssid == "" {
 		println("no ssid. wifi set <ssid> <password> first")
@@ -102,12 +104,21 @@ func cmdConnect() {
 		println("radio:", err.Error())
 		return
 	}
-	println("connecting to", ssid)
-	err := espradio.Connect(espradio.STAConfig{SSID: ssid, Password: password})
-	if err != nil {
+	var err error
+	for attempt := 1; attempt <= connectAttempts; attempt++ {
+		println("connecting to", ssid, "attempt", strconv.Itoa(attempt)+"/"+strconv.Itoa(connectAttempts))
+		err = espradio.Connect(espradio.STAConfig{SSID: ssid, Password: password})
+		if err == nil {
+			break
+		}
 		linkUp = false
 		println("connect:", err.Error())
-		return
+		if attempt == connectAttempts {
+			return
+		}
+		// Auth failures often leave the station mid-handshake. Drop it before the next try.
+		espradio.Disconnect()
+		time.Sleep(time.Second)
 	}
 	linkUp = true
 	joinedSSID = ssid

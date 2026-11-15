@@ -52,7 +52,7 @@ config clear
 reboot
 ```
 
-`wifi set` keeps the SSID and password in RAM. `wifi connect` uses that copy. `config save` writes them to flash, and the next boot loads them back. `config clear` erases both.
+`wifi set` keeps the SSID and password in RAM. `wifi connect` uses that copy and tries the association three times. `config save` writes them to flash. The next boot loads that record and connects on its own. `config clear` erases both.
 
 `config show` prints `******** (N chars)`, never the stored password. Keystrokes are echoed as you type, including `wifi set`.
 
