@@ -1,0 +1,9 @@
+/build/
+*.elf
+*.bin
+*.hex
+*.uf2
+
+# Local Wi-Fi credentials for the non-interactive wifi example.
+# Copy wifi.secrets.example to wifi.secrets. Never commit the copy.
+/wifi.secrets
