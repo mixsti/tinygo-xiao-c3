@@ -25,6 +25,10 @@ func main() {
 	println("XIAO ESP32-C3 console")
 	println("USB-Serial-JTAG. Type help.")
 	loadSaved()
+	if flashSaved && ssid != "" {
+		println("saved wifi config, connecting")
+		cmdConnect()
+	}
 	for {
 		prompt()
 		line := strings.TrimSpace(readLine())
@@ -140,7 +144,7 @@ func printHelp() {
 	println("help                         this list")
 	println("wifi scan                    SSID and RSSI")
 	println("wifi set <ssid> <password>   keep credentials in RAM")
-	println("wifi connect                 join the configured AP")
+	println("wifi connect                 join the AP, 3 attempts")
 	println("wifi disconnect")
 	println("wifi status                  state, IP, gateway, RSSI, MAC")
 	println("ping <host>                  ICMP echo")
