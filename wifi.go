@@ -30,6 +30,7 @@ var (
 	joinedSSID string
 	ip         netip.Addr
 	gateway    netip.Addr
+	prefixBits int
 	stack      xnet.Netstack
 	netdev     *espradio.NetDev
 	localPort  uint16 = 41000
@@ -130,7 +131,7 @@ func cmdConnect() {
 	// Drop any previous lease so a second `wifi connect` can request again.
 	stack.EnableDHCP(context.Background(), false, netip.Addr{})
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	addr, gw, _, err := stack.EnableDHCP(ctx, true, netip.Addr{})
+	addr, gw, bits, err := stack.EnableDHCP(ctx, true, netip.Addr{})
 	cancel()
 	if err != nil {
 		haveLease = false
@@ -139,6 +140,7 @@ func cmdConnect() {
 	}
 	ip = addr
 	gateway = gw
+	prefixBits = bits
 	haveLease = true
 	println("ip", ip.String())
 	println("gateway", gateway.String())
@@ -258,18 +260,43 @@ func cmdTCP(host string, port uint16) {
 	if localPort < 41000 {
 		localPort = 41000
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	target := netip.AddrPortFrom(addr, port)
+	println("tcp", target.String())
+	// A blocking dial sends one SYN and waits. On Wi-Fi that SYN is often
+	// dropped, and a SYN is not covered by the RTO timer, so the handshake
+	// sits until "cywnet: deadline exceeded". The retrying dial requeues it.
+	// On-link peers also need ARP first: DialTCP registers a zero MAC and
+	// will not transmit until that MAC is filled in.
+	rstack := stack.StackAsync().StackRetrying(backoff)
+	if onLink(addr) {
+		hw, arpErr := rstack.DoResolveHardwareAddress6(addr, 2*time.Second, 2)
+		if arpErr != nil {
+			println("arp:", arpErr.Error())
+			return
+		}
+		println("mac", formatMAC(hw))
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	block := stack.StackAsync().StackBlocking(backoff)
 	start := time.Now()
-	err = block.DoDialTCP(ctx, &conn, localPort, netip.AddrPortFrom(addr, port), 5*time.Second)
+	err = rstack.DoDialTCP(ctx, &conn, localPort, target, 5*time.Second, 3)
 	if err != nil {
-		println("tcp", host+":"+strconv.Itoa(int(port)), err.Error())
-		conn.Abort()
+		println("tcp", target.String(), err.Error())
 		return
 	}
-	println("tcp connected", addr.String(), "port", strconv.Itoa(int(port)), "in", time.Since(start).String())
+	println("tcp connected", target.String(), "in", time.Since(start).String())
 	conn.Close()
+}
+
+func onLink(dst netip.Addr) bool {
+	if prefixBits <= 0 || !ip.Is4() || !dst.Is4() {
+		return false
+	}
+	p, err := ip.Prefix(prefixBits)
+	if err != nil {
+		return false
+	}
+	return p.Contains(dst)
 }
 
 func resolve(host string) (netip.Addr, error) {

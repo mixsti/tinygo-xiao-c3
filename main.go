@@ -99,10 +99,16 @@ func wifiCmd(args []string) {
 func tcpCmd(args []string) {
 	if len(args) < 1 || len(args) > 2 {
 		println("usage: tcp <host> [port]")
+		println("       tcp <host>:<port>")
 		return
 	}
+	host := args[0]
 	port := 80
-	if len(args) == 2 {
+	if len(args) == 1 {
+		if h, p, ok := splitHostPort(args[0]); ok {
+			host, port = h, int(p)
+		}
+	} else {
 		n, err := strconv.Atoi(args[1])
 		if err != nil || n < 1 || n > 65535 {
 			println("port must be 1..65535")
@@ -110,7 +116,19 @@ func tcpCmd(args []string) {
 		}
 		port = n
 	}
-	cmdTCP(args[0], uint16(port))
+	cmdTCP(host, uint16(port))
+}
+
+func splitHostPort(s string) (string, uint16, bool) {
+	i := strings.LastIndex(s, ":")
+	if i <= 0 || strings.Count(s, ":") != 1 {
+		return "", 0, false
+	}
+	n, err := strconv.Atoi(s[i+1:])
+	if err != nil || n < 1 || n > 65535 {
+		return "", 0, false
+	}
+	return s[:i], uint16(n), true
 }
 
 func configCmd(args []string) {
@@ -149,7 +167,7 @@ func printHelp() {
 	println("wifi status                  state, IP, gateway, RSSI, MAC")
 	println("ping <host>                  ICMP echo")
 	println("dns <host>                   resolve an A record")
-	println("tcp <host> [port]            TCP connect test, default port 80")
+	println("tcp <host> [port]            TCP connect, or tcp host:port")
 	println("config show                  SSID and masked password")
 	println("config save                  write credentials to flash")
 	println("config clear                 erase flash and RAM credentials")

@@ -60,7 +60,7 @@ An SSID with spaces needs quotes: `wifi set "my network" secret`. The password i
 
 `wifi scan` prints SSID and RSSI. espradio v0.5.0 does not export channel or auth mode, and the CLI says so. A scan can drop the association. Run `wifi connect` again if status looks wrong.
 
-`wifi status` prints state, SSID, IPv4, gateway, RSSI, and the station MAC. `ping` is ICMP echo. If a host drops ICMP, `tcp <host> 80` is the connectivity check.
+`wifi status` prints state, SSID, IPv4, gateway, RSSI, and the station MAC. `ping` is ICMP echo. If a host drops ICMP, `tcp <host> 80` or `tcp <host>:<port>` checks TCP. A LAN target is resolved with ARP before the handshake, and the SYN is retried.
 
 ## Saved credentials
 
