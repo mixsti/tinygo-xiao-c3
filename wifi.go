@@ -232,10 +232,13 @@ func cmdTCP(host string, port uint16) {
 		return
 	}
 	var conn tcp.Conn
+	// lneto v0.4 rejects a nil RWBackoff with "missing HAL configuration",
+	// even though the field comment says a default is used.
 	if err := conn.Configure(tcp.ConnConfig{
 		RxBuf:             make([]byte, 256),
 		TxBuf:             make([]byte, 256),
 		TxPacketQueueSize: 4,
+		RWBackoff:         backoff,
 	}); err != nil {
 		println("tcp:", err.Error())
 		return
