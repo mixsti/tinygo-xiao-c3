@@ -22,7 +22,7 @@ jobs:
           echo "/usr/local/tinygo/bin" >> "$GITHUB_PATH"
 
       - name: Host tests
-        run: go test ./...
+        run: go test ./console
 
-      - name: Build examples
-        run: make build WIFI_SSID=ci WIFI_PASS=ci
+      - name: Build the CLI
+        run: make build

@@ -2,7 +2,7 @@
 
 // Interactive CLI on the XIAO ESP32-C3 USB-Serial-JTAG console.
 //
-//	tinygo flash -target=xiao-esp32c3 -monitor ./examples/cli
+//	tinygo flash -target=xiao-esp32c3 -monitor .
 //
 // `tinygo monitor` delivers Enter as CR. Backspace and DEL delete the last
 // character. Wi-Fi credentials are never printed back in full.
